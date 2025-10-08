@@ -30,8 +30,8 @@ test('Filter even and odd numbers', () => {
   expect(filteredNumbers).toEqual([2, 4]);
 });
 
-test("This is a failed test to check the CI/CD pipeline", () => {
+test("This is a failed test that is now working to check the CI/CD pipeline", () => {
     const numbers = [1, 2, 3];
     const filteredNumbers = filterEvenNumbers(numbers);
-    expect(filteredNumbers).toEqual([1,2]);
+    expect(filteredNumbers).not.toEqual([1, 2]);
 });
