@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-nginxservice-a
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: firstmilestone.plizgivemefivepoint
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginxservice
+                port:
+                  number: 80
