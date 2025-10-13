@@ -17,3 +17,27 @@ Verify that the NGINX Ingress controller is running
 kubectl get pods -n ingress-nginx
 ```
 
+
+Configure Docker to use Minikube's daemon
+```bash
+minikube docker-env | Invoke-Expression
+```
+
+
+# Start the project
+Deploy App 
+```bash
+kubectl apply -f deployment.yaml
+kubectl apply -f ingress.yaml
+```
+
+Wait for deployment to be ready
+```bash
+kubectl rollout status deployment/nginx-deployment
+```
+
+# Access the project 
+Access you app 
+```bash
+kubectl port-forward service/nginxservice 8080:80
+```
