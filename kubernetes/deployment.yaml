@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: nginxdeployment
-          image: my-custom-nginx:v2
+          image: DOCKER_USERNAME/my-custom-nginx:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
