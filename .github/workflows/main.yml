@@ -82,21 +82,21 @@ jobs:
       - name: Update Kubernetes deployment
         run: |
           # Update deployment.yaml to use the new Docker Hub image
-          sed -i "s|image: my-custom-nginx:.*|image: ${{ secrets.DOCKER_USERNAME }}/my-custom-nginx:${{ github.sha }}|g" deployment.yaml
+          sed -i "s|image: my-custom-nginx:.*|image: ${{ secrets.DOCKER_USERNAME }}/my-custom-nginx:${{ github.sha }}|g" kubernetes/deployment.yaml
+          
+          # Also update imagePullPolicy to work with Docker Hub
+          sed -i "s|imagePullPolicy: Never|imagePullPolicy: Always|g" kubernetes/deployment.yaml
           
           # Add updated deployment file to git
-          git add deployment.yaml
+          git add kubernetes/deployment.yaml
 
       # Update ingress with timestamp annotation
       - name: Update ingress timestamp
         run: |
-          # Add timestamp annotation to ingress for tracking
+          # Add timestamp annotation to ingress for tracking (correct path)
           if [ -f "kubernetes/ingress.yaml" ]; then
             sed -i '/metadata:/a\  annotations:\n    deployment.timestamp: "${{ github.run_number }}-$(date +%s)"' kubernetes/ingress.yaml
             git add kubernetes/ingress.yaml
-          elif [ -f "ingress.yaml" ]; then
-            sed -i '/metadata:/a\  annotations:\n    deployment.timestamp: "${{ github.run_number }}-$(date +%s)"' ingress.yaml
-            git add ingress.yaml
           fi
 
       # Commit image updates
