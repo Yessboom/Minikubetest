@@ -15,7 +15,7 @@ spec:
       containers:
         - name: nginxdeployment
           image: my-custom-nginx:v2
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
 ---
