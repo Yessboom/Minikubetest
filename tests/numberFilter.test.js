@@ -37,7 +37,7 @@ test("This is a failed test that is now working to check the CI/CD pipeline", ()
 });
 
 test('Filter even numbers with negative numbers', () => {
-  const numbers = [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0];
+  const numbers = [-11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0];
   const filteredNumbers = filterEvenNumbers(numbers);
   expect(filteredNumbers).toEqual([-10, -8, -6, -4, -2, 0]);
 });
