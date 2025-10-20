@@ -3,6 +3,11 @@ kind: Deployment
 metadata:
   name: nginx-deployment
 spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0 #To always have at least one pod available
+      maxSurge: 1
   selector:
     matchLabels:
       app: nginxdeployment
@@ -14,7 +19,7 @@ spec:
     spec:
       containers:
         - name: nginxdeployment
-          image: yessboom/my-custom-nginx:latest
+          image: yessboom/my-custom-nginx:latest #Will be updated by CIto use SHA
           imagePullPolicy: Always
           ports:
             - containerPort: 80

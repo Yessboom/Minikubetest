@@ -70,44 +70,27 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/my-custom-nginx:latest
             ${{ secrets.DOCKER_USERNAME }}/my-custom-nginx:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ${{ secrets.DOCKER_USERNAME }}/my-custom-nginx:latest
 
-      # Update Kubernetes deployment with new image
-      - name: Update Kubernetes deployment
+      # Update Kubernetes manifest
+      - name: Update Kubernetes manifest
         run: |
-          # Update deployment.yaml to use the new Docker Hub image
-          sed -i "s|image: my-custom-nginx:.*|image: ${{ secrets.DOCKER_USERNAME }}/my-custom-nginx:${{ github.sha }}|g" kubernetes/deployment.yaml
-          
-          # Also update imagePullPolicy to work with Docker Hub
-          sed -i "s|imagePullPolicy: Never|imagePullPolicy: Always|g" kubernetes/deployment.yaml
-          
-          # Add updated deployment file to git
+          # Update image tag in deployment.yaml
+          sed -i "s|image: ${{ secrets.DOCKER_USERNAME }}/my-custom-nginx:.*|image: ${{ secrets.DOCKER_USERNAME }}/my-custom-nginx:${{ github.sha }}|g" kubernetes/deployment.yaml
+          # Add a timestamp annotation to force rollout even if image looks the same
+          sed -i "s|kubernetes.io/change-cause:.*|kubernetes.io/change-cause: \"Updated $(date -u +'%Y-%m-%dT%H:%M:%SZ')\"|g" kubernetes/deployment.yaml
+
+      # Commit and push updated manifest (GitOps)
+      - name: Commit and push updated manifest (GitOps)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add kubernetes/deployment.yaml
-
-      # Update ingress with timestamp annotation
-      - name: Update ingress timestamp
-        run: |
-          # Add timestamp annotation to ingress for tracking (correct path)
-          if [ -f "kubernetes/ingress.yaml" ]; then
-            sed -i '/metadata:/a\  annotations:\n    deployment.timestamp: "${{ github.run_number }}-$(date +%s)"' kubernetes/ingress.yaml
-            git add kubernetes/ingress.yaml
-          fi
-
-      # Commit image updates
-      - name: Commit Docker image updates
-        run: |
-          # Check if there are changes to commit
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update Docker image to ${{ secrets.DOCKER_USERNAME }}/my-custom-nginx:${{ github.sha }} [skip ci]"
-          fi
+          git commit -m "chore: update image to ${{ github.sha }}" || echo "No changes"
+          git push
 
       # Merge to Test branch
       - name: Merge Dev into Test branch
