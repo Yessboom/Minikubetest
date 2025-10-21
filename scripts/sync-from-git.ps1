@@ -1,5 +1,3 @@
-# Sync Kubernetes manifests from Git and apply to local cluster
-# Run this in a loop or as a scheduled task to auto-update your Minikube cluster
 
 param(
     [int]$IntervalSeconds = 60,
