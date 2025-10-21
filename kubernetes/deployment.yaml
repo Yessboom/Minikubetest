@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: nginxdeployment
-          image: yessboom/my-custom-nginx:latest #Will be updated by CIto use SHA
+          image: yessboom/my-custom-nginx:a74df550ec01b843f7ba51a4c798226e7ddc3992
           imagePullPolicy: Always
           ports:
             - containerPort: 80
