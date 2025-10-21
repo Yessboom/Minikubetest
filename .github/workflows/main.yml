@@ -83,21 +83,22 @@ jobs:
           # Add a timestamp annotation to force rollout even if image looks the same
           sed -i "s|kubernetes.io/change-cause:.*|kubernetes.io/change-cause: \"Updated $(date -u +'%Y-%m-%dT%H:%M:%SZ')\"|g" kubernetes/deployment.yaml
 
-      # Commit and push updated manifest (GitOps)
       - name: Commit and push updated manifest (GitOps)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add kubernetes/deployment.yaml
           git commit -m "chore: update image to ${{ github.sha }}" || echo "No changes"
+          # Don't push to Dev yet
 
-      # Merge to Test branch
       - name: Merge Dev into Test branch
         run: |
           git fetch origin
           git checkout Test 2>/dev/null || git checkout -b Test
-          git merge origin/Dev --no-ff -m "Auto-merge: Deploy Dev to Test after successful tests and Docker build"
-          git push origin Test
+          git merge origin/Dev --no-ff -m "Auto-merge: Deploy Dev to Test"
+          # Now merge the manifest update commit into Test
+          git merge Dev
+          git push origin Test  # Only push to Test
 
       # Create deployment comment
       - name: Create deployment comment
