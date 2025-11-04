@@ -3,10 +3,6 @@ kind: Application
 metadata:
   name: minikubetest-app
   namespace: argocd
-  annotations:
-    argocd-image-updater.argoproj.io/image-list: nginxdeployment=yessboom/my-custom-nginx:latest
-    argocd-image-updater.argoproj.io/nginxdeployment.update-strategy: latest
-    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   source:
