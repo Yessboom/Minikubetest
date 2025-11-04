@@ -81,11 +81,8 @@ kubectl apply -f argocd/application.yaml
 
 ## How it works:
 
-# - ArgoCD syncs your Git repo every 3 minutes
-
-# - ArgoCD Image Updater checks Docker Hub every 2 minutes for new images
-
-# - When a new image is found, it updates the deployment automatically
+ArgoCD syncs with Git repo every 3 minutes
+If there is a change in the image SHA (in kubernetes/deployment) it pulls the new one and update.
 
 # - Rolling update strategy ensures zero downtime (maxUnavailable: 0)
 
