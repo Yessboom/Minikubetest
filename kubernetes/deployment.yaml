@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: nginxdeployment
-          image: yessboom/my-custom-nginx:e686be6e029e1ee052c8821ef0f163e8c222c9be
+          image: yessboom/my-custom-nginx:901a207db2648d65ab6034e7e9a8811f51a9df17
           imagePullPolicy: Always
           ports:
             - containerPort: 80
