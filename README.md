@@ -1,43 +1,50 @@
-#  Set up:
-##  Minikube
-If you haven't installed it yet, Minikube is available [here](https://minikube.sigs.k8s.io/docs/start/?arch=%2Fwindows%2Fx86-64%2Fstable%2F.exe+download) .
+# install Ingress
 
-Start Minikube
-```bash
-minikube start
-```
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/cloud/deploy.yaml
+kubectl wait --namespace ingress-nginx --for=condition=Ready pod -l app.kubernetes.io/component=controller --timeout=180s
 
-### Ingress Controller:
-Enable Ingress
-```bash
-minikube addons enable ingress
-```
-Verify that the NGINX Ingress controller is running
-```bash
-kubectl get pods -n ingress-nginx
-```
+# Build and push image
 
+docker build -t yessboom/my-custom-nginx:latest .
+docker login
+docker push yessboom/my-custom-nginx:latest
 
-Configure Docker to use Minikube's daemon
-```bash
-minikube docker-env | Invoke-Expression
-```
+## Then build it
 
+docker build -t my-custom-nginx:local .
 
-# Start the project
-Deploy App 
-```bash
-kubectl apply -f deployment.yaml
-kubectl apply -f ingress.yaml
-```
+## Apply manifests
 
-Wait for deployment to be ready
-```bash
+kubectl apply -f kubernetes/deployment.yaml
 kubectl rollout status deployment/nginx-deployment
-```
+kubectl apply -f kubernetes/ingress.yaml
 
-# Access the project 
-Access you app 
-```bash
-kubectl port-forward service/nginxservice 8080:80
-```
+# Check ur app
+
+Just go to http://localhost
+
+# Install Metrics Server (for Dashboard metrics)
+
+kubectl apply -f metrics-server.yaml
+kubectl -n kube-system rollout status deploy/metrics-server
+kubectl top nodes
+
+# Run ur dashboard
+
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+kubectl -n kubernetes-dashboard rollout status deploy/kubernetes-dashboard
+kubectl apply -f kubernetes/dashboard-admin.yaml
+
+### get login token
+
+kubectl -n kubernetes-dashboard create token admin-user
+
+### open dashboard
+
+kubectl proxy
+
+### In another terminal
+
+start http://127.0.0.1:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+
+And paste your login token
