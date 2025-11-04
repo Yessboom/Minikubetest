@@ -112,7 +112,7 @@ jobs:
             ✅ Tests passed on Dev branch
             🐳 Docker image built and pushed to Docker Hub
             📦 Code automatically merged to Test branch
-            ⏳ ArgoCD will auto-sync within 3 minutes
+            ⏳ ArgoCD will auto-sync within 30 seconds
 
             **Docker Image Details:**
             - Repository: ${{ secrets.DOCKER_USERNAME }}/my-custom-nginx
