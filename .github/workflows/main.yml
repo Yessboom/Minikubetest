@@ -9,7 +9,6 @@ on:
       - main
       - Dev
 
-# Add this permissions section
 permissions:
   contents: write
   pull-requests: write
