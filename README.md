@@ -65,7 +65,7 @@ kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argoc
 
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($\_)) }
 
-## Access ArgoCD UI
+## Access ArgoCD UI !! There is one thing for each branchs
 
 kubectl port-forward svc/argocd-server -n argocd 8080:443
 
