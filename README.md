@@ -81,6 +81,10 @@ kubectl apply -f argocd/application.yaml
 
 ## How it works:
 
+## Check in the console the different images for your environnements:
+
+kubectl get deployments -A -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image | Select-String "nginx-deployment"
+
 **Multi-Environment Setup:**
 
 - **Dev Environment** (namespace: dev) - Syncs from `Dev` branch
