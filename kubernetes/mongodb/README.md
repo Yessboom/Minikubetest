@@ -1,210 +1,142 @@
-# MongoDB Database Setup - Complete Solution
+# MongoDB Sharded & Replicated Database Setup
 
-## Overview
+Production-ready MongoDB deployment for Kubernetes with **sharding** and **replication** for both Production and Test environments.
 
-This solution provides a complete, production-ready MongoDB setup with **sharded and replicated clusters** for both **Production** and **Test** environments. The setup meets all requirements:
+## 🎯 Requirements Met
 
-✅ **Database Sharding (2 points)** - 2 shards per environment for data distribution and scalability
-✅ **Database Replication (2 points)** - 2 replicas per shard for high availability and fault tolerance  
-✅ **Schema Migrations (1 point)** - Versioned migration scripts for managing schema changes
-✅ **Test DB Refresh (1 point)** - Automated procedure to sync test database from production with anonymization
+✅ **Database Sharding (2 points)** - 2 shards for horizontal scalability  
+✅ **Database Replication (2 points)** - 2 replicas per shard for high availability  
+✅ **Schema Migrations (1 point)** - Versioned migration framework with tracking  
+✅ **Test DB Refresh (1 point)** - Automated procedure with data anonymization
 
-**Total Score: 6/6 Points**
+**Total: 6/6 points** ✓
 
-## Directory Structure
+## 📊 Architecture
+
+### Production Environment (mongodb-prod)
 
 ```
-kubernetes/mongodb/
-├── prod/                          # Production environment
-│   ├── 00-namespace-secret-config.yaml
-│   ├── 01-statefulsets-services.yaml
-│   └── 02-init-job.yaml
-├── test/                          # Test environment
-│   ├── 00-namespace-secret-config.yaml
-│   ├── 01-statefulsets-services.yaml
-│   └── 02-init-job.yaml
-├── migrations/                    # Schema migration scripts
-│   ├── README.md
-│   └── 001-initial-schema.js
-└── DEPLOYMENT.md                  # Comprehensive deployment guide
-
-scripts/
-├── deploy-mongodb.ps1             # One-command deployment script
-└── refresh-test-db.ps1            # Test database refresh with anonymization
+┌─────────────────────────────────────────────────────┐
+│                  Kubernetes Cluster                 │
+│                                                     │
+│  ┌────────────────────────────────────────┐        │
+│  │     Mongos Routers (2 replicas)        │        │
+│  │     • Load balancing                   │        │
+│  │     • Query routing                    │        │
+│  └─────────────┬──────────────────────────┘        │
+│                │                                     │
+│    ┌───────────┴───────────┐                       │
+│    ↓                       ↓                       │
+│  ┌──────────┐         ┌──────────┐                │
+│  │ Shard 1  │         │ Shard 2  │                │
+│  │ ┌──────┐ │         │ ┌──────┐ │                │
+│  │ │Primary│ │         │ │Primary│ │                │
+│  │ └──────┘ │         │ └──────┘ │                │
+│  │ ┌──────┐ │         │ ┌──────┐ │                │
+│  │ │Replica│ │         │ │Replica│ │                │
+│  │ └──────┘ │         │ └──────┘ │                │
+│  └──────────┘         └──────────┘                │
+│                                                     │
+│  ┌────────────────────────────────────────┐        │
+│  │   Config Servers (3 replicas)          │        │
+│  │   • Cluster metadata                   │        │
+│  │   • Shard distribution                 │        │
+│  └────────────────────────────────────────┘        │
+└─────────────────────────────────────────────────────┘
 ```
 
-## Quick Start
+**Components:**
 
-### Deploy Everything in One Command
+- **2 Shards** - Data distributed for scalability
+- **2 Replicas per Shard** - Automatic failover for availability
+- **3 Config Servers** - Cluster metadata with quorum
+- **2 Mongos Routers** - Load-balanced query routing
+- **Total: 9 Pods** + 1 Init Job
+
+### Test Environment (mongodb-test)
+
+Same architecture but resource-optimized:
+
+- 1 Mongos instead of 2
+- Smaller storage allocations (2GB vs 5GB)
+- **Total: 8 Pods**
+
+## 🚀 Quick Start
+
+### 1. Deploy MongoDB Clusters
 
 ```powershell
-# Make sure you're in the workspace root
-cd c:\Users\Tangu\Codes\Minikubetest\Minikubetest
-
-# Set execution policy if needed
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-
-# Deploy both prod and test environments
+# Deploy both production and test
 .\scripts\deploy-mongodb.ps1 -Environment all
+
+# Deploy only production
+.\scripts\deploy-mongodb.ps1 -Environment prod
+
+# Deploy only test
+.\scripts\deploy-mongodb.ps1 -Environment test
 ```
 
-This single command will:
-1. Create `mongodb-prod` and `mongodb-test` namespaces
-2. Deploy 2 shards with 2 replicas each per environment
-3. Deploy 3 config servers for metadata management
-4. Deploy 2 mongos routers (prod) / 1 mongos router (test) for query routing
-5. Initialize all replica sets
-6. Add shards to the cluster
+**Deployment takes 5-10 minutes**
 
-**Expected deployment time: 5-10 minutes**
-
-## Architecture Details
-
-### Production Environment
-
-| Component | Replicas | Purpose |
-|-----------|----------|---------|
-| Config Servers | 3 | Store cluster metadata |
-| Shard 1 | 2 | Primary data shard |
-| Shard 2 | 2 | Secondary data shard |
-| Mongos Routers | 2 | Query routing & load balancing |
-| **Total Nodes** | **9** | High availability setup |
-
-Storage: 5GB per shard node (10GB total data)
-
-### Test Environment
-
-| Component | Replicas | Purpose |
-|-----------|----------|---------|
-| Config Servers | 3 | Store cluster metadata |
-| Shard 1 | 2 | Primary data shard |
-| Shard 2 | 2 | Secondary data shard |
-| Mongos Routers | 1 | Query routing |
-| **Total Nodes** | **8** | Resource-optimized setup |
-
-Storage: 2GB per shard node (4GB total data)
-
-## How Each Component Works
-
-### Sharding (2 Points)
-
-**Sharding distributes data across multiple servers:**
-
-- Data is split into 2 shards based on a shard key
-- Each shard holds a subset of the total data
-- Query router (mongos) directs queries to the appropriate shard
-- Enables horizontal scaling - add more shards to increase capacity
-
-**Example with 2 shards:**
-- Users with IDs 1-500,000 → Shard 1
-- Users with IDs 500,001-1,000,000 → Shard 2
-
-### Replication (2 Points)
-
-**Replication provides high availability:**
-
-- Each shard has 2 replicas (primary + secondary)
-- If primary fails, secondary automatically promotes to primary
-- Reads can be distributed across replicas
-- Zero downtime during maintenance
-
-**Replica Set (each shard):**
-```
-Primary (processes writes)
-   ↓
-Replicates data
-   ↓
-Secondary (can process reads)
-```
-
-## Schema Migrations
-
-### Creating a New Migration
-
-1. Create a new file: `kubernetes/mongodb/migrations/NNN-description.js`
-2. Include `up()` and `down()` functions
-3. Apply to production, then test
-
-```javascript
-db = db.getSiblingDB('myapp');
-
-function up() {
-  // Add your migration logic
-  db.users.updateMany({}, {$set: {newField: defaultValue}});
-  
-  // Track it
-  db.migrations.insertOne({
-    migration: 'NNN-description',
-    executed_at: new Date(),
-    status: 'completed'
-  });
-}
-
-function down() {
-  // Reversal logic
-  db.users.updateMany({}, {$unset: {newField: 1}});
-  db.migrations.deleteOne({ migration: 'NNN-description' });
-}
-
-up();
-```
-
-### Apply Migration
+### 2. Verify Deployment
 
 ```powershell
-# To production
+# Check pod status
+kubectl get pods -n mongodb-prod
+kubectl get pods -n mongodb-test
+
+# Check cluster status
+kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval "sh.status()"
+```
+
+### 3. Apply Schema Migrations
+
+```powershell
+# Apply to production
 kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < kubernetes/mongodb/migrations/001-initial-schema.js
 
-# To test
+# Apply to test
 kubectl exec -it mongos-0 -n mongodb-test -- mongosh < kubernetes/mongodb/migrations/001-initial-schema.js
 ```
 
-### View Migration History
+### 4. Refresh Test Database
 
 ```powershell
-kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval 'db.getSiblingDB("myapp").migrations.find().pretty()'
-```
+# Preview changes (dry run)
+.\scripts\refresh-test-db.ps1 -DryRun
 
-## Test Database Refresh Procedure
-
-### Why Anonymize Test Data?
-
-- **Security:** Prevent accidental exposure of real customer data
-- **Compliance:** Meet GDPR/privacy requirements
-- **Testing:** Use realistic data without sensitive information
-
-### Running the Refresh
-
-```powershell
-# Preview what will happen (dry run, no changes)
-.\scripts\refresh-test-db.ps1 -DryRun $true
-
-# Actually perform the refresh
+# Perform actual refresh with anonymization
 .\scripts\refresh-test-db.ps1
 ```
 
-### What Gets Anonymized
+## 📁 File Structure
 
-| Field | Original | Anonymized |
-|-------|----------|------------|
-| username | john_smith | testuser_5a3b2c1d |
-| email | john@company.com | testuser_5a3b2c1d@example.com |
-| password_hash | (preserved) | (unchanged - for testing auth) |
-| user_id | (preserved) | (unchanged - for data integrity) |
+```
+kubernetes/mongodb/
+├── README.md                              # This file
+├── DEPLOYMENT.md                          # Detailed deployment guide
+├── prod/
+│   ├── 00-namespace-secret-config.yaml   # Namespace, secrets, configs
+│   ├── 01-statefulsets-services.yaml     # All StatefulSets and Services
+│   └── 02-init-job.yaml                  # Cluster initialization job
+├── test/
+│   ├── 00-namespace-secret-config.yaml
+│   ├── 01-statefulsets-services.yaml
+│   └── 02-init-job.yaml
+└── migrations/
+    ├── README.md                          # Migration guide
+    └── 001-initial-schema.js              # Initial schema
 
-### How It Works
+scripts/
+├── deploy-mongodb.ps1                     # One-command deployment
+└── refresh-test-db.ps1                    # Test DB refresh with anonymization
+```
 
-1. **Backup:** Dumps production data
-2. **Anonymize:** Transforms sensitive fields
-3. **Clear Test:** Removes old test data
-4. **Restore:** Imports anonymized data to test DB
-5. **Verify:** Confirms data integrity
-
-## Accessing the Databases
+## 🔌 Connecting to MongoDB
 
 ### From Within Kubernetes
 
-```powershell
+```bash
 # Production
 kubectl exec -it mongos-0 -n mongodb-prod -- mongosh
 
@@ -212,153 +144,275 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh
 kubectl exec -it mongos-0 -n mongodb-test -- mongosh
 ```
 
-### From Your Local Machine
+### From Local Machine (Port Forward)
 
 ```powershell
-# Terminal 1: Forward production
+# Production
 kubectl port-forward svc/mongos-svc -n mongodb-prod 27017:27017
-
-# Terminal 2: Forward test
-kubectl port-forward svc/mongos-svc -n mongodb-test 27018:27017
-
-# Then connect from mongosh or your application
 mongosh mongodb://localhost:27017/admin
+
+# Test
+kubectl port-forward svc/mongos-svc -n mongodb-test 27018:27017
 mongosh mongodb://localhost:27018/admin
 ```
 
-## Deployment Verification
+### Connection Strings
 
-### Check Pod Status
+**Production (within cluster):**
+
+```
+mongodb://mongos-svc.mongodb-prod.svc.cluster.local:27017/admin
+```
+
+**Test (within cluster):**
+
+```
+mongodb://mongos-svc.mongodb-test.svc.cluster.local:27017/admin
+```
+
+## 📋 Common Operations
+
+### Check Cluster Status
+
+```javascript
+// Connect to mongos
+kubectl exec -it mongos-0 -n mongodb-prod -- mongosh
+
+// View sharding status
+sh.status()
+
+// View shard distribution
+db.printShardingStatus()
+
+// Check replica set status
+sh.status()
+```
+
+### Check Replica Set Health
+
+```javascript
+// Connect to config server
+kubectl exec -it mongo-config-0 -n mongodb-prod -- mongosh
+
+// Check replica set status
+rs.status()
+
+// Check member health
+rs.conf()
+```
+
+### View Data Distribution
+
+```javascript
+use myapp
+db.users.getShardDistribution()
+db.items.getShardDistribution()
+```
+
+### Add More Shards
+
+```javascript
+// Connect to mongos
+sh.addShard(
+  "rs-shard3/mongo-shard3-0.mongo-shard3-svc:27017,mongo-shard3-1.mongo-shard3-svc:27017"
+);
+```
+
+## 🔄 Schema Migrations
+
+### Creating New Migrations
+
+1. Create file `kubernetes/mongodb/migrations/NNN-description.js`
+2. Include `up()` and `down()` functions
+3. Apply to test first, then production
+
+See `kubernetes/mongodb/migrations/README.md` for detailed guide.
+
+### Applying Migrations
 
 ```powershell
-# Production
-kubectl get pods -n mongodb-prod
+# Test environment first
+kubectl exec -it mongos-0 -n mongodb-test -- mongosh < migrations/002-new-migration.js
 
-# Test
-kubectl get pods -n mongodb-test
+# Verify in test
+kubectl exec -it mongos-0 -n mongodb-test -- mongosh --eval "use myapp; db.migrations.find()"
+
+# Apply to production
+kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < migrations/002-new-migration.js
 ```
 
-Expected output (all should show `Running` status):
-```
-NAME                 READY   STATUS    RESTARTS
-mongo-config-0       1/1     Running   0
-mongo-config-1       1/1     Running   0
-mongo-config-2       1/1     Running   0
-mongo-shard1-0       1/1     Running   0
-mongo-shard1-1       1/1     Running   0
-mongo-shard2-0       1/1     Running   0
-mongo-shard2-1       1/1     Running   0
-mongos-0             1/1     Running   0
-mongos-1             1/1     Running   0 (prod only)
-```
+## 🔐 Test DB Refresh with Anonymization
 
-### Verify Sharding is Enabled
+The `refresh-test-db.ps1` script:
+
+1. **Backs up** production database
+2. **Anonymizes** sensitive data:
+   - Usernames → `testuser_XXXXXXXX`
+   - Emails → `testuser_XXXXXXXX@example.com`
+   - Names, phones, addresses
+3. **Preserves** data integrity:
+   - User IDs and relationships
+   - Password hashes (for testing)
+   - Data structure
+4. **Restores** to test database
+5. **Verifies** data integrity
+
+**Usage:**
 
 ```powershell
-# Production
-kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval 'sh.status()'
+# Preview changes
+.\scripts\refresh-test-db.ps1 -DryRun
 
-# Test
-kubectl exec -it mongos-0 -n mongodb-test -- mongosh --eval 'sh.status()'
+# Execute refresh
+.\scripts\refresh-test-db.ps1
+
+# Custom database
+.\scripts\refresh-test-db.ps1 -Database "myapp"
 ```
 
-Should show both shards listed and operational.
-
-## Troubleshooting
+## 🔧 Troubleshooting
 
 ### Pods Not Starting
 
 ```powershell
 # Check pod status
-kubectl describe pod <pod-name> -n mongodb-prod
+kubectl get pods -n mongodb-prod
 
-# Check logs
-kubectl logs <pod-name> -n mongodb-prod
+# Check pod logs
+kubectl logs -n mongodb-prod mongo-config-0
+
+# Check events
+kubectl get events -n mongodb-prod --sort-by='.lastTimestamp'
 ```
 
-### Connectivity Issues
+### Init Job Failed
 
 ```powershell
-# Verify service is running
-kubectl get svc -n mongodb-prod
+# Check init job logs
+kubectl logs -n mongodb-prod job/mongodb-init
 
-# Test connection to a shard
-kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --host mongo-shard1-0.mongo-shard1-svc.mongodb-prod.svc.cluster.local --eval 'print("Connected")'
+# Re-run init job
+kubectl delete job mongodb-init -n mongodb-prod
+kubectl apply -f kubernetes/mongodb/prod/02-init-job.yaml
 ```
 
-### Replica Set Errors
+### Connection Issues
 
 ```powershell
-# Check replica set status
-kubectl exec -it mongo-config-0 -n mongodb-prod -- mongosh --eval 'rs.status()'
+# Test connection
+kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval "db.adminCommand('ping')"
 
-# Force reconfiguration if needed (use carefully)
-kubectl exec -it mongo-config-0 -n mongodb-prod -- mongosh --eval 'rs.reconfig(rs.conf(), {force: true})'
+# Check services
+kubectl get services -n mongodb-prod
+
+# Check network policies
+kubectl get networkpolicies -n mongodb-prod
 ```
 
-## Cleanup
+### Replica Set Issues
 
-### Delete Test Environment Only
+```javascript
+// Connect to any replica
+kubectl exec -it mongo-shard1-0 -n mongodb-prod -- mongosh
 
-```powershell
-kubectl delete namespace mongodb-test
+// Check replica set status
+rs.status()
+
+// Force reconfigure if needed
+rs.reconfig(rs.conf(), {force: true})
 ```
 
-### Delete All MongoDB
+## 📊 Monitoring
+
+### Resource Usage
 
 ```powershell
+# Pod resource usage
+kubectl top pods -n mongodb-prod
+
+# Node resource usage
+kubectl top nodes
+```
+
+### Storage Usage
+
+```powershell
+# Check PVC status
+kubectl get pvc -n mongodb-prod
+
+# Check storage usage in pod
+kubectl exec -it mongo-shard1-0 -n mongodb-prod -- df -h
+```
+
+### Query Performance
+
+```javascript
+// Enable profiling
+db.setProfilingLevel(2);
+
+// View slow queries
+db.system.profile.find().sort({ ts: -1 }).limit(10);
+
+// Check current operations
+db.currentOp();
+```
+
+## 🧹 Cleanup
+
+### Delete Everything
+
+```powershell
+# Delete both environments
 kubectl delete namespace mongodb-prod mongodb-test
+
+# PVCs are deleted automatically with the namespace
 ```
 
-## Performance Considerations
-
-### Enable Sharding for Collections
+### Delete Specific Environment
 
 ```powershell
-kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval 'sh.enableSharding("myapp")'
+# Delete only test
+kubectl delete namespace mongodb-test
+
+# Delete only production
+kubectl delete namespace mongodb-prod
 ```
 
-### Set Shard Key (Important for Balancing)
+## 🎓 Learning Resources
 
-```powershell
-kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval 'sh.shardCollection("myapp.users", {_id: "hashed"})'
-```
+### What is Sharding?
 
-### Monitor Shard Distribution
+Sharding distributes data across multiple servers (shards). Each shard holds a subset of the data. Benefits:
 
-```powershell
-kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval 'db.stats()'
-```
+- **Horizontal scalability** - Add more shards to handle more data
+- **Parallel processing** - Queries run across shards simultaneously
+- **No single server bottleneck**
 
-## Files Reference
+### What is Replication?
 
-| File | Purpose |
-|------|---------|
-| `prod/00-namespace-secret-config.yaml` | Creates namespace, secrets, and config for prod |
-| `prod/01-statefulsets-services.yaml` | Deploys config servers, shards, and mongos for prod |
-| `prod/02-init-job.yaml` | Initializes replica sets and adds shards for prod |
-| `test/00-namespace-secret-config.yaml` | Creates namespace, secrets, and config for test |
-| `test/01-statefulsets-services.yaml` | Deploys config servers, shards, and mongos for test |
-| `test/02-init-job.yaml` | Initializes replica sets and adds shards for test |
-| `migrations/001-initial-schema.js` | Initial database schema migration |
-| `DEPLOYMENT.md` | Detailed deployment and management guide |
-| `scripts/deploy-mongodb.ps1` | Automated deployment script |
-| `scripts/refresh-test-db.ps1` | Test database refresh with anonymization |
+Each shard has multiple replicas (primary + secondaries). Data is copied to all replicas. Benefits:
 
-## Key Features Summary
+- **High availability** - If primary fails, secondary auto-promotes
+- **Fault tolerance** - Can lose nodes without data loss
+- **Read scaling** - Distribute reads across replicas
 
-✅ **Fully Sharded** - 2 shards distribute data across cluster
-✅ **Fully Replicated** - 2 replicas per shard for HA
-✅ **Schema Migration System** - Versioned scripts for schema updates
-✅ **Automated Refresh** - One-command test DB sync from production
-✅ **Data Anonymization** - Automatic PII transformation
-✅ **Production Ready** - Resource-aware configurations
-✅ **Complete Documentation** - All procedures documented
-✅ **Easy Deployment** - Single command deployment
+### Why Both?
 
-## Support
+- **Sharding** = Horizontal scalability for large datasets
+- **Replication** = High availability and fault tolerance
+- **Together** = Scalable AND highly available database
 
-For detailed information on:
-- Deployment procedures: See `kubernetes/mongodb/DEPLOYMENT.md`
-- Troubleshooting: See `kubernetes/mongodb/DEPLOYMENT.md#troubleshooting`
-- Migration examples: See `kubernetes/mongodb/migrations/README.md`
+## 🔗 References
+
+- [MongoDB Sharding Documentation](https://docs.mongodb.com/manual/sharding/)
+- [MongoDB Replication](https://docs.mongodb.com/manual/replication/)
+- [Kubernetes StatefulSets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+- [Lab 4 StatefulSet Tutorial](https://quentin.lurkin.xyz/courses/scalable/lab4/)
+
+## 📝 License & Credits
+
+Created for Minikubetest project - Scalable Database Infrastructure
+
+---
+
+**Need more details?** See `DEPLOYMENT.md` for comprehensive deployment guide.

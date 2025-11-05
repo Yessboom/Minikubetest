@@ -24,8 +24,13 @@ spec:
     spec:
       containers:
         - name: nginxdeployment
-          image: yessboom/my-custom-nginx:481e8e4ceef75d58fd246553681bcc8279411d08
+          image: yessboom/my-custom-nginx:1ce315ff2747d90156af6840f774800bd67be873
           imagePullPolicy: Always
+          env:
+            - name: REDIS_HOST
+              value: "redis-cache"
+            - name: REDIS_PORT
+              value: "6379"
           ports:
             - containerPort: 80
           readinessProbe:
