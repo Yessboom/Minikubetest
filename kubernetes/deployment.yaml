@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: nginxdeployment
-          image: yessboom/my-custom-nginx:a0f1c93a4879475f355e2f2f78e544b0e3ddfc6d
+          image: yessboom/my-custom-nginx:06ba7128bbf18b9f5b330426aa74be6cdbeef91b
           imagePullPolicy: Always
           env:
             - name: REDIS_HOST
