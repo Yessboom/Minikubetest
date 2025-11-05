@@ -118,6 +118,10 @@ Password: (from command above)
 
 # Database
 
+## Check ur pods
+
+kubectl get pods -A | Select-String mongodb
+
 ## For Test
 
 kubectl port-forward -n mongodb-test svc/mongos-svc 27017:27017
