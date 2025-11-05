@@ -1,50 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Custom Page</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-align: center;
-            padding: 50px;
-            margin: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-        }
-        p {
-            font-size: 1.2em;
-            line-height: 1.6;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-align: center;
+        padding: 50px;
+        margin: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      h1 {
+        font-size: 2.5em;
+        margin-bottom: 20px;
+      }
+      p {
+        font-size: 1.2em;
+        line-height: 1.6;
+      }
     </style>
-</head>
-<!-- Right now its accessible at http://firstmilestone.plizgivemefivepoint/ (To remember : I had to change my host file ) -->
-<body>
+  </head>
+  <!-- Right now its accessible at http://firstmilestone.plizgivemefivepoint/ (To remember : I had to change my host file ) -->
+  <body>
     <div class="container">
-        <h1>Tanguy's cute, beautiful, sexy page</h1>
-        <h2>Hello there. What is this page for you're asking yourself? </h2>
-        <p>Easy, it's a little page with nginx ingress done only to get the points, 
-            because quite frankly my computer is dying and I can't really get Docker Desktop to do anything. 
-            I swear I'll have something a bit better next time but in them meantime this will do.</p>
-        <h1> AND NOW THIS IS MILESTONE 2 </h1>
-        <p>Pod: <span id="hostname"></span></p>
+      <h1>Tanguy's cute, beautiful, sexy page</h1>
+      <h2>Hello there. What is this page for you're asking yourself?</h2>
+      <p>
+        Easy, it's a little page with nginx ingress done only to get the points,
+        because quite frankly my computer is dying and I can't really get Docker
+        Desktop to do anything. I swear I'll have something a bit better next
+        time but in them meantime this will do.
+      </p>
+      <h1>
+        AND NOW THIS IS MILESTONE 3 SOON VERY SOON TEST CI PUSH GIT Pliz Work
+        WITH ARGOCD fix2.0
+      </h1>
+      <p>Pod: <span id="hostname"></span></p>
     </div>
-    
+
     <script>
-        document.getElementById('hostname').textContent = window.location.hostname;
+      document.getElementById("hostname").textContent =
+        window.location.hostname;
     </script>
-</body>
+  </body>
 </html>

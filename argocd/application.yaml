@@ -1,21 +1,18 @@
+# DEV Environment - Tracks Dev branch
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: minikubetest-app
+  name: minikubetest-dev
   namespace: argocd
-  annotations:
-    argocd-image-updater.argoproj.io/image-list: nginxdeployment=yessboom/my-custom-nginx:latest
-    argocd-image-updater.argoproj.io/nginxdeployment.update-strategy: latest
-    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   source:
     repoURL: https://github.com/Yessboom/Minikubetest
-    targetRevision: main
+    targetRevision: Dev
     path: kubernetes
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: dev
   syncPolicy:
     automated:
       prune: true
@@ -28,4 +25,62 @@ spec:
       backoff:
         duration: 5s
         factor: 2
-        maxDuration: 3m
+        maxDuration: 30s
+---
+# TEST Environment - Tracks Test branch
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minikubetest-test
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Yessboom/Minikubetest
+    targetRevision: Test
+    path: kubernetes
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: test
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30s
+---
+# PROD Environment - Tracks main branch
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minikubetest-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Yessboom/Minikubetest
+    targetRevision: main
+    path: kubernetes
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30s
