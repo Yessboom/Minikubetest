@@ -4,13 +4,13 @@
 
 All requirements from the lab have been **successfully implemented**:
 
-| Requirement | Points | Implementation | Status |
-|------------|--------|----------------|--------|
-| **Database Sharding** | 2 | 2 shards with data distribution across nodes | ✅ Complete |
-| **Database Replication** | 2 | 2 replicas per shard with automatic failover | ✅ Complete |
-| **Schema Migrations** | 1 | Versioned JavaScript migrations with tracking | ✅ Complete |
-| **Test DB Refresh** | 1 | Automated backup, anonymization, and restore | ✅ Complete |
-| **TOTAL** | **6** | | **✅ 6/6** |
+| Requirement              | Points | Implementation                                | Status      |
+| ------------------------ | ------ | --------------------------------------------- | ----------- |
+| **Database Sharding**    | 2      | 2 shards with data distribution across nodes  | ✅ Complete |
+| **Database Replication** | 2      | 2 replicas per shard with automatic failover  | ✅ Complete |
+| **Schema Migrations**    | 1      | Versioned JavaScript migrations with tracking | ✅ Complete |
+| **Test DB Refresh**      | 1      | Automated backup, anonymization, and restore  | ✅ Complete |
+| **TOTAL**                | **6**  |                                               | **✅ 6/6**  |
 
 ---
 
@@ -19,6 +19,7 @@ All requirements from the lab have been **successfully implemented**:
 ### Kubernetes Configuration (6 files)
 
 **Production Environment:**
+
 ```
 kubernetes/mongodb/prod/
 ├── 00-namespace-secret-config.yaml    (Namespace, secrets, ConfigMaps)
@@ -27,6 +28,7 @@ kubernetes/mongodb/prod/
 ```
 
 **Test Environment:**
+
 ```
 kubernetes/mongodb/test/
 ├── 00-namespace-secret-config.yaml    (Namespace, secrets, ConfigMaps)
@@ -227,6 +229,7 @@ kubectl get pods -n mongodb-prod -l app=mongo-shard1
 ### 1. Sharding (Horizontal Scalability)
 
 **Demonstration:**
+
 ```javascript
 // Connect to mongos
 kubectl exec -it mongos-0 -n mongodb-prod -- mongosh
@@ -245,6 +248,7 @@ db.users.getShardDistribution()
 ```
 
 **Benefits:**
+
 - ✅ Data distributed across multiple servers
 - ✅ Can add more shards as data grows
 - ✅ Queries execute in parallel across shards
@@ -253,6 +257,7 @@ db.users.getShardDistribution()
 ### 2. Replication (High Availability)
 
 **Demonstration:**
+
 ```powershell
 # Test automatic failover
 kubectl delete pod mongo-shard1-0 -n mongodb-prod
@@ -268,6 +273,7 @@ kubectl get pods -n mongodb-prod -w
 ```
 
 **Benefits:**
+
 - ✅ Automatic failover in <30 seconds
 - ✅ Zero data loss with majority write concern
 - ✅ Read scaling with read preferences
@@ -276,6 +282,7 @@ kubectl get pods -n mongodb-prod -w
 ### 3. Schema Migrations
 
 **Demonstration:**
+
 ```powershell
 # Apply initial schema
 kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < kubernetes/mongodb/migrations/001-initial-schema.js
@@ -292,6 +299,7 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval "use myapp; db.migra
 ```
 
 **Benefits:**
+
 - ✅ Versioned schema changes
 - ✅ Tracked in database
 - ✅ Reversible with down() functions
@@ -300,6 +308,7 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval "use myapp; db.migra
 ### 4. Test DB Refresh with Anonymization
 
 **Demonstration:**
+
 ```powershell
 # Preview anonymization
 .\scripts\refresh-test-db.ps1 -DryRun
@@ -320,6 +329,7 @@ kubectl exec -it mongos-0 -n mongodb-test -- mongosh --eval "use myapp; db.users
 ```
 
 **Benefits:**
+
 - ✅ Realistic test data from production
 - ✅ PII anonymized (GDPR compliant)
 - ✅ Data relationships preserved
@@ -445,11 +455,13 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < migrations/002-new-featur
 ### Understanding Sharding
 
 **What is it?**
+
 - Data split across multiple servers (shards)
 - Each shard holds a subset of data
 - Shard key determines data distribution
 
 **Why use it?**
+
 - ✅ Horizontal scalability (add more shards)
 - ✅ Larger datasets than single server
 - ✅ Parallel query processing
@@ -458,11 +470,13 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < migrations/002-new-featur
 ### Understanding Replication
 
 **What is it?**
+
 - Multiple copies of data (replicas)
 - Primary handles writes
 - Secondaries replicate from primary
 
 **Why use it?**
+
 - ✅ High availability (automatic failover)
 - ✅ Data durability (multiple copies)
 - ✅ Read scaling (distribute reads)
@@ -471,11 +485,13 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < migrations/002-new-featur
 ### Combining Both
 
 **Why combine sharding and replication?**
+
 - Sharding: Scale for large data
 - Replication: High availability per shard
 - Result: Scalable AND highly available
 
 **Real-world example:**
+
 ```
 1TB database, 1M requests/sec
 - 4 shards: 250GB each
@@ -489,12 +505,12 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < migrations/002-new-featur
 
 ## 📚 Documentation
 
-| File | Purpose |
-|------|---------|
-| `kubernetes/mongodb/README.md` | Quick start & overview |
-| `kubernetes/mongodb/DEPLOYMENT.md` | Comprehensive deployment guide |
-| `kubernetes/mongodb/migrations/README.md` | Migration framework guide |
-| This file | Complete implementation summary |
+| File                                      | Purpose                         |
+| ----------------------------------------- | ------------------------------- |
+| `kubernetes/mongodb/README.md`            | Quick start & overview          |
+| `kubernetes/mongodb/DEPLOYMENT.md`        | Comprehensive deployment guide  |
+| `kubernetes/mongodb/migrations/README.md` | Migration framework guide       |
+| This file                                 | Complete implementation summary |
 
 ---
 
@@ -517,24 +533,28 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < migrations/002-new-featur
 ## 🎉 Success Criteria Met
 
 ✅ **Sharding (2 points):**
+
 - 2 shards deployed
 - Data distributed across shards
 - Shard key configured
 - Balancer enabled
 
 ✅ **Replication (2 points):**
+
 - 2 replicas per shard
 - Automatic failover working
 - Replica set initialized
 - High availability confirmed
 
 ✅ **Schema Migrations (1 point):**
+
 - Migration framework created
 - Versioned migrations
 - Tracking system implemented
 - Initial schema applied
 
 ✅ **Test DB Refresh (1 point):**
+
 - Automated backup from production
 - Data anonymization implemented
 - Restore to test database
@@ -545,11 +565,13 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < migrations/002-new-featur
 ## 🚀 Next Steps
 
 1. **Deploy the clusters:**
+
    ```powershell
    .\scripts\deploy-mongodb.ps1 -Environment all
    ```
 
 2. **Apply schema:**
+
    ```powershell
    kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < kubernetes/mongodb/migrations/001-initial-schema.js
    ```
@@ -557,6 +579,7 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < migrations/002-new-featur
 3. **Populate with data** (optional, for testing)
 
 4. **Test DB refresh:**
+
    ```powershell
    .\scripts\refresh-test-db.ps1
    ```
@@ -596,7 +619,8 @@ You now have a **production-ready**, **sharded**, **replicated** MongoDB cluster
 
 ---
 
-*Implementation inspired by:*
+_Implementation inspired by:_
+
 - [Quentin Lurkin's Lab 4](https://quentin.lurkin.xyz/courses/scalable/lab4/)
 - [Kubernetes StatefulSets Guide](https://kubernetes.io/docs/tasks/run-application/run-replicated-stateful-application/)
 - MongoDB Best Practices

@@ -7,13 +7,14 @@ Production-ready MongoDB deployment for Kubernetes with **sharding** and **repli
 ✅ **Database Sharding (2 points)** - 2 shards for horizontal scalability  
 ✅ **Database Replication (2 points)** - 2 replicas per shard for high availability  
 ✅ **Schema Migrations (1 point)** - Versioned migration framework with tracking  
-✅ **Test DB Refresh (1 point)** - Automated procedure with data anonymization  
+✅ **Test DB Refresh (1 point)** - Automated procedure with data anonymization
 
 **Total: 6/6 points** ✓
 
 ## 📊 Architecture
 
 ### Production Environment (mongodb-prod)
+
 ```
 ┌─────────────────────────────────────────────────────┐
 │                  Kubernetes Cluster                 │
@@ -45,6 +46,7 @@ Production-ready MongoDB deployment for Kubernetes with **sharding** and **repli
 ```
 
 **Components:**
+
 - **2 Shards** - Data distributed for scalability
 - **2 Replicas per Shard** - Automatic failover for availability
 - **3 Config Servers** - Cluster metadata with quorum
@@ -52,7 +54,9 @@ Production-ready MongoDB deployment for Kubernetes with **sharding** and **repli
 - **Total: 9 Pods** + 1 Init Job
 
 ### Test Environment (mongodb-test)
+
 Same architecture but resource-optimized:
+
 - 1 Mongos instead of 2
 - Smaller storage allocations (2GB vs 5GB)
 - **Total: 8 Pods**
@@ -155,11 +159,13 @@ mongosh mongodb://localhost:27018/admin
 ### Connection Strings
 
 **Production (within cluster):**
+
 ```
 mongodb://mongos-svc.mongodb-prod.svc.cluster.local:27017/admin
 ```
 
 **Test (within cluster):**
+
 ```
 mongodb://mongos-svc.mongodb-test.svc.cluster.local:27017/admin
 ```
@@ -207,7 +213,9 @@ db.items.getShardDistribution()
 
 ```javascript
 // Connect to mongos
-sh.addShard("rs-shard3/mongo-shard3-0.mongo-shard3-svc:27017,mongo-shard3-1.mongo-shard3-svc:27017")
+sh.addShard(
+  "rs-shard3/mongo-shard3-0.mongo-shard3-svc:27017,mongo-shard3-1.mongo-shard3-svc:27017"
+);
 ```
 
 ## 🔄 Schema Migrations
@@ -250,6 +258,7 @@ The `refresh-test-db.ps1` script:
 5. **Verifies** data integrity
 
 **Usage:**
+
 ```powershell
 # Preview changes
 .\scripts\refresh-test-db.ps1 -DryRun
@@ -339,13 +348,13 @@ kubectl exec -it mongo-shard1-0 -n mongodb-prod -- df -h
 
 ```javascript
 // Enable profiling
-db.setProfilingLevel(2)
+db.setProfilingLevel(2);
 
 // View slow queries
-db.system.profile.find().sort({ts: -1}).limit(10)
+db.system.profile.find().sort({ ts: -1 }).limit(10);
 
 // Check current operations
-db.currentOp()
+db.currentOp();
 ```
 
 ## 🧹 Cleanup
@@ -372,18 +381,23 @@ kubectl delete namespace mongodb-prod
 ## 🎓 Learning Resources
 
 ### What is Sharding?
+
 Sharding distributes data across multiple servers (shards). Each shard holds a subset of the data. Benefits:
+
 - **Horizontal scalability** - Add more shards to handle more data
 - **Parallel processing** - Queries run across shards simultaneously
 - **No single server bottleneck**
 
 ### What is Replication?
+
 Each shard has multiple replicas (primary + secondaries). Data is copied to all replicas. Benefits:
+
 - **High availability** - If primary fails, secondary auto-promotes
 - **Fault tolerance** - Can lose nodes without data loss
 - **Read scaling** - Distribute reads across replicas
 
 ### Why Both?
+
 - **Sharding** = Horizontal scalability for large datasets
 - **Replication** = High availability and fault tolerance
 - **Together** = Scalable AND highly available database

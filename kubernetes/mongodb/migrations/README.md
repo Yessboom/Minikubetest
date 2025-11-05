@@ -5,6 +5,7 @@ This directory contains versioned migration scripts for MongoDB schema updates.
 ## Overview
 
 Migrations are JavaScript files that can be executed against MongoDB to:
+
 - Create/modify collections and indexes
 - Transform existing data
 - Add/remove fields
@@ -19,35 +20,36 @@ Create files named: `NNN-description.js` where NNN is a 3-digit number.
 Example: `001-initial-schema.js`
 
 Each migration should have two functions:
+
 - `up()` - Apply the migration
 - `down()` - Revert the migration (optional)
 
 ```javascript
 // Template
-db = db.getSiblingDB('myapp');
+db = db.getSiblingDB("myapp");
 
 function up() {
   // Create collections
-  db.createCollection('users');
-  
+  db.createCollection("users");
+
   // Create indexes
   db.users.createIndex({ email: 1 }, { unique: true });
-  
+
   // Track migration
   db.migrations.insertOne({
-    migration: '001-initial-schema',
+    migration: "001-initial-schema",
     executed_at: new Date(),
-    status: 'completed'
+    status: "completed",
   });
-  
-  print('Migration 001: Completed');
+
+  print("Migration 001: Completed");
 }
 
 function down() {
   // Revert changes
   db.users.drop();
-  db.migrations.deleteOne({ migration: '001-initial-schema' });
-  print('Migration 001: Reverted');
+  db.migrations.deleteOne({ migration: "001-initial-schema" });
+  print("Migration 001: Reverted");
 }
 
 // Execute
@@ -57,16 +59,19 @@ up();
 ## Applying Migrations
 
 ### To Production
+
 ```powershell
 kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < kubernetes/mongodb/migrations/001-initial-schema.js
 ```
 
 ### To Test
+
 ```powershell
 kubectl exec -it mongos-0 -n mongodb-test -- mongosh < kubernetes/mongodb/migrations/001-initial-schema.js
 ```
 
 ### Port-Forward Method
+
 ```powershell
 # Start port forward
 kubectl port-forward svc/mongos-svc -n mongodb-prod 27017:27017
@@ -89,19 +94,23 @@ db.migrations.find().sort({ executed_at: 1 })
 ## Best Practices
 
 1. **Always test migrations on test environment first**
+
    - Apply to mongodb-test
    - Verify data integrity
    - Then apply to mongodb-prod
 
 2. **Make migrations idempotent**
+
    - Check if changes already exist
    - Safe to run multiple times
 
 3. **Include rollback instructions**
+
    - Write `down()` function
    - Document manual rollback steps
 
 4. **Backup before major migrations**
+
    ```powershell
    kubectl exec -it mongos-0 -n mongodb-prod -- mongodump --out=/backup
    ```
@@ -150,6 +159,7 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval "use myapp; db.order
 ## Migration Ordering
 
 Migrations are applied in numerical order:
+
 - 001-initial-schema.js
 - 002-add-user-fields.js
 - 003-add-orders-collection.js
@@ -174,28 +184,25 @@ If a migration fails:
 ## Data Transformation Examples
 
 ### Add new field with default value
+
 ```javascript
 db.users.updateMany(
   { profile: { $exists: false } },
-  { $set: { profile: { bio: '', avatar: null } } }
+  { $set: { profile: { bio: "", avatar: null } } }
 );
 ```
 
 ### Rename field
+
 ```javascript
-db.users.updateMany(
-  {},
-  { $rename: { "oldFieldName": "newFieldName" } }
-);
+db.users.updateMany({}, { $rename: { oldFieldName: "newFieldName" } });
 ```
 
 ### Convert field type
+
 ```javascript
-db.users.find({ age: { $type: "string" } }).forEach(function(doc) {
-  db.users.updateOne(
-    { _id: doc._id },
-    { $set: { age: parseInt(doc.age) } }
-  );
+db.users.find({ age: { $type: "string" } }).forEach(function (doc) {
+  db.users.updateOne({ _id: doc._id }, { $set: { age: parseInt(doc.age) } });
 });
 ```
 

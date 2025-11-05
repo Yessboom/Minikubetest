@@ -22,17 +22,20 @@ Complete guide for deploying, managing, and maintaining MongoDB sharded clusters
 ### Required Tools
 
 1. **Kubernetes Cluster** (Minikube, Kind, or cloud provider)
+
    ```powershell
    # Verify cluster access
    kubectl cluster-info
    ```
 
 2. **kubectl** - Kubernetes CLI
+
    ```powershell
    kubectl version --client
    ```
 
 3. **mongosh** - MongoDB Shell (for local operations)
+
    ```powershell
    mongosh --version
    ```
@@ -63,6 +66,7 @@ kubectl top nodes
 ### Component Breakdown
 
 #### 1. Config Servers (3 replicas)
+
 **Purpose**: Store cluster metadata and configuration
 
 ```yaml
@@ -75,6 +79,7 @@ Resources: 256Mi RAM, 100m CPU
 **Why 3?** Provides fault tolerance with majority-based consensus. Can survive 1 node failure.
 
 #### 2. Shard Servers (2 shards × 2 replicas)
+
 **Purpose**: Store actual data, distributed across shards
 
 ```yaml
@@ -94,6 +99,7 @@ Shard 2:
 **Why 2 replicas per shard?** Minimum for automatic failover. Primary handles writes, secondary provides HA.
 
 #### 3. Mongos Routers (1-2 replicas)
+
 **Purpose**: Query routing and load balancing
 
 ```yaml
@@ -113,16 +119,20 @@ Application → Mongos Router → Appropriate Shard → Replica Set Primary → 
 ### Sharding Strategy
 
 **Hash-based Sharding (users collection):**
+
 ```javascript
-sh.shardCollection("myapp.users", { _id: "hashed" })
+sh.shardCollection("myapp.users", { _id: "hashed" });
 ```
+
 - Distributes users evenly across shards
 - Good for balanced write distribution
 
 **Range-based Sharding (items collection):**
+
 ```javascript
-sh.shardCollection("myapp.items", { userId: 1, _id: 1 })
+sh.shardCollection("myapp.items", { userId: 1, _id: 1 });
 ```
+
 - Co-locates user data on same shard
 - Efficient for user-specific queries
 
@@ -232,6 +242,7 @@ stringData:
 ```
 
 **To update secrets:**
+
 ```powershell
 kubectl edit secret mongodb-secret -n mongodb-prod
 ```
@@ -239,37 +250,42 @@ kubectl edit secret mongodb-secret -n mongodb-prod
 ### StatefulSet Configuration
 
 **Why StatefulSets?**
+
 - Stable pod identities (mongo-shard1-0, mongo-shard1-1)
 - Ordered deployment and scaling
 - Persistent storage association
 
 **Key settings:**
+
 ```yaml
-serviceName: mongo-shard1-svc  # Headless service for DNS
-replicas: 2                    # Number of replicas
-volumeClaimTemplates:          # Persistent storage
-  storage: 5Gi                 # Per-pod storage
+serviceName: mongo-shard1-svc # Headless service for DNS
+replicas: 2 # Number of replicas
+volumeClaimTemplates: # Persistent storage
+  storage: 5Gi # Per-pod storage
 ```
 
 ### Service Configuration
 
 **Headless Services** (ClusterIP: None):
+
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: mongo-shard1-svc
 spec:
-  clusterIP: None  # Headless
+  clusterIP: None # Headless
   selector:
     app: mongo-shard1
 ```
 
 **Purpose**: Provides stable DNS names for each pod:
+
 - `mongo-shard1-0.mongo-shard1-svc.mongodb-prod.svc.cluster.local`
 - `mongo-shard1-1.mongo-shard1-svc.mongodb-prod.svc.cluster.local`
 
 **Mongos Service** (ClusterIP):
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -294,49 +310,49 @@ Located in `kubernetes/mongodb/migrations/`
 #### Creating a Migration
 
 **Template:**
+
 ```javascript
 // migrations/002-add-profile-fields.js
-db = db.getSiblingDB('myapp');
+db = db.getSiblingDB("myapp");
 
 function up() {
-  print('Adding profile fields to users...');
-  
+  print("Adding profile fields to users...");
+
   // Add new fields
   db.users.updateMany(
     { profile: { $exists: false } },
-    { $set: { 
-      profile: { bio: '', avatar: null, social: {} },
-      settings: { theme: 'light', notifications: true }
-    }}
+    {
+      $set: {
+        profile: { bio: "", avatar: null, social: {} },
+        settings: { theme: "light", notifications: true },
+      },
+    }
   );
-  
+
   // Create index
-  db.users.createIndex({ 'profile.bio': 'text' });
-  
+  db.users.createIndex({ "profile.bio": "text" });
+
   // Track migration
   db.migrations.insertOne({
-    migration: '002-add-profile-fields',
-    description: 'Add user profile and settings',
+    migration: "002-add-profile-fields",
+    description: "Add user profile and settings",
     executed_at: new Date(),
-    status: 'completed'
+    status: "completed",
   });
-  
-  print('Migration 002 completed');
+
+  print("Migration 002 completed");
 }
 
 function down() {
-  print('Removing profile fields...');
-  
-  db.users.updateMany(
-    {},
-    { $unset: { profile: 1, settings: 1 } }
-  );
-  
-  db.users.dropIndex('profile.bio_text');
-  
-  db.migrations.deleteOne({ migration: '002-add-profile-fields' });
-  
-  print('Migration 002 reverted');
+  print("Removing profile fields...");
+
+  db.users.updateMany({}, { $unset: { profile: 1, settings: 1 } });
+
+  db.users.dropIndex("profile.bio_text");
+
+  db.migrations.deleteOne({ migration: "002-add-profile-fields" });
+
+  print("Migration 002 reverted");
 }
 
 up();
@@ -380,8 +396,8 @@ db.migrations.find().sort({ executed_at: 1 })
 
 ```javascript
 // Load migration file and run down() function
-load('migrations/002-add-profile-fields.js')
-down()
+load("migrations/002-add-profile-fields.js");
+down();
 ```
 
 ---
@@ -389,6 +405,7 @@ down()
 ## Test Database Refresh
 
 ### Purpose
+
 Sync test database with production data while anonymizing PII for GDPR compliance.
 
 ### Process Flow
@@ -429,6 +446,7 @@ Sync test database with production data while anonymizing PII for GDPR complianc
 ### Anonymization Strategy
 
 **Anonymized Fields:**
+
 ```
 username: john_smith → testuser_5a3b2c1d
 email: john@company.com → testuser_5a3b2c1d@example.com
@@ -439,6 +457,7 @@ address: Full anonymization to test data
 ```
 
 **Preserved Fields:**
+
 ```
 _id: Preserved (maintains relationships)
 passwordHash: Preserved (for auth testing)
@@ -506,16 +525,16 @@ db.killOp(operationId)
 
 ```javascript
 // List indexes
-db.users.getIndexes()
+db.users.getIndexes();
 
 // Create index
-db.users.createIndex({ email: 1 }, { unique: true, name: 'email_unique' })
+db.users.createIndex({ email: 1 }, { unique: true, name: "email_unique" });
 
 // Drop index
-db.users.dropIndex('email_unique')
+db.users.dropIndex("email_unique");
 
 // Rebuild indexes
-db.users.reIndex()
+db.users.reIndex();
 ```
 
 ---
@@ -533,10 +552,10 @@ mongodb://mongos-svc.mongodb-prod.svc.cluster.local:27017/myapp?maxPoolSize=50&m
 
 ```javascript
 // Read from secondaries for analytics
-db.users.find().readPref('secondary')
+db.users.find().readPref("secondary");
 
 // Read from nearest for low latency
-db.users.find().readPref('nearest')
+db.users.find().readPref("nearest");
 ```
 
 ### Write Concerns
@@ -552,25 +571,28 @@ db.users.insert({...}, { writeConcern: { w: 0 } })
 ### Shard Key Selection
 
 **Good shard keys:**
+
 - High cardinality (many unique values)
 - Even distribution
 - Frequently queried
 
 **Bad shard keys:**
-- Monotonically increasing (_id, timestamp)
+
+- Monotonically increasing (\_id, timestamp)
 - Low cardinality (boolean, status)
 - Rarely queried
 
 **Examples:**
+
 ```javascript
 // Good: Hashed _id
-sh.shardCollection("myapp.users", { _id: "hashed" })
+sh.shardCollection("myapp.users", { _id: "hashed" });
 
 // Good: Compound key for co-location
-sh.shardCollection("myapp.orders", { customerId: 1, orderDate: 1 })
+sh.shardCollection("myapp.orders", { customerId: 1, orderDate: 1 });
 
 // Bad: Timestamp (creates hot spot)
-sh.shardCollection("myapp.logs", { timestamp: 1 })
+sh.shardCollection("myapp.logs", { timestamp: 1 });
 ```
 
 ---
@@ -606,6 +628,7 @@ mongorestore --host localhost:27017 --db myapp --dir ./backup-myapp/myapp --drop
 ### Automated Backups
 
 **CronJob for backups:**
+
 ```yaml
 apiVersion: batch/v1
 kind: CronJob
@@ -613,28 +636,28 @@ metadata:
   name: mongodb-backup
   namespace: mongodb-prod
 spec:
-  schedule: "0 2 * * *"  # Daily at 2 AM
+  schedule: "0 2 * * *" # Daily at 2 AM
   jobTemplate:
     spec:
       template:
         spec:
           containers:
-          - name: backup
-            image: mongo:7.0
-            command:
-            - /bin/bash
-            - -c
-            - |
-              mongodump --host mongos-svc.mongodb-prod.svc.cluster.local:27017 \
-                --out /backup/$(date +%Y-%m-%d) \
-                --gzip
-            volumeMounts:
-            - name: backup-storage
-              mountPath: /backup
+            - name: backup
+              image: mongo:7.0
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  mongodump --host mongos-svc.mongodb-prod.svc.cluster.local:27017 \
+                    --out /backup/$(date +%Y-%m-%d) \
+                    --gzip
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backup
           volumes:
-          - name: backup-storage
-            persistentVolumeClaim:
-              claimName: mongodb-backup-pvc
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: mongodb-backup-pvc
           restartPolicy: OnFailure
 ```
 
@@ -647,23 +670,27 @@ spec:
 #### 1. Pods Not Starting
 
 **Symptoms:**
+
 ```
 NAME              READY   STATUS    RESTARTS
 mongo-config-0    0/1     Pending   0
 ```
 
 **Diagnosis:**
+
 ```powershell
 kubectl describe pod mongo-config-0 -n mongodb-prod
 kubectl get events -n mongodb-prod --sort-by='.lastTimestamp'
 ```
 
 **Common causes:**
+
 - Insufficient resources (CPU/memory)
 - No storage class available
 - PVC provisioning failed
 
 **Solutions:**
+
 ```powershell
 # Check resource availability
 kubectl top nodes
@@ -680,11 +707,13 @@ kubectl get storageclass
 Init job fails or hangs
 
 **Diagnosis:**
+
 ```powershell
 kubectl logs -n mongodb-prod job/mongodb-init
 ```
 
 **Solutions:**
+
 ```powershell
 # Delete and recreate init job
 kubectl delete job mongodb-init -n mongodb-prod
@@ -698,6 +727,7 @@ rs.initiate(...)
 #### 3. Cannot Connect to MongoDB
 
 **Diagnosis:**
+
 ```powershell
 # Test from within cluster
 kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval "db.adminCommand('ping')"
@@ -710,6 +740,7 @@ kubectl get endpoints -n mongodb-prod
 ```
 
 **Solutions:**
+
 ```powershell
 # Restart mongos
 kubectl rollout restart deployment mongos -n mongodb-prod
@@ -724,22 +755,24 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval "sh.status()"
 Multiple primaries or no primary
 
 **Diagnosis:**
+
 ```javascript
 kubectl exec -it mongo-shard1-0 -n mongodb-prod -- mongosh
 rs.status()
 ```
 
 **Solutions:**
+
 ```javascript
 // Force reconfigure (use carefully!)
-rs.reconfig(rs.conf(), {force: true})
+rs.reconfig(rs.conf(), { force: true });
 
 // Stepdown current primary
-rs.stepDown()
+rs.stepDown();
 
 // Remove problematic member
-rs.remove("mongo-shard1-1.mongo-shard1-svc:27017")
-rs.add("mongo-shard1-1.mongo-shard1-svc:27017")
+rs.remove("mongo-shard1-1.mongo-shard1-svc:27017");
+rs.add("mongo-shard1-1.mongo-shard1-svc:27017");
 ```
 
 #### 5. Disk Full
@@ -748,11 +781,13 @@ rs.add("mongo-shard1-1.mongo-shard1-svc:27017")
 Write errors, pod eviction
 
 **Diagnosis:**
+
 ```powershell
 kubectl exec -it mongo-shard1-0 -n mongodb-prod -- df -h
 ```
 
 **Solutions:**
+
 ```powershell
 # Increase PVC size (if storage class supports it)
 kubectl edit pvc mongo-data-mongo-shard1-0 -n mongodb-prod

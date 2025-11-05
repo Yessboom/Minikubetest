@@ -3,11 +3,13 @@
 ## ⚡ Quick Commands
 
 ### Deploy Everything
+
 ```powershell
 .\scripts\deploy-mongodb.ps1 -Environment all
 ```
 
 ### Access Databases
+
 ```powershell
 # Production
 kubectl exec -it mongos-0 -n mongodb-prod -- mongosh
@@ -17,6 +19,7 @@ kubectl exec -it mongos-0 -n mongodb-test -- mongosh
 ```
 
 ### Check Status
+
 ```powershell
 # Pods
 kubectl get pods -n mongodb-prod
@@ -27,16 +30,19 @@ kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval "sh.status()"
 ```
 
 ### Apply Schema
+
 ```powershell
 kubectl exec -it mongos-0 -n mongodb-prod -- mongosh < kubernetes/mongodb/migrations/001-initial-schema.js
 ```
 
 ### Refresh Test DB
+
 ```powershell
 .\scripts\refresh-test-db.ps1
 ```
 
 ### Cleanup
+
 ```powershell
 kubectl delete namespace mongodb-prod mongodb-test
 ```
@@ -45,15 +51,15 @@ kubectl delete namespace mongodb-prod mongodb-test
 
 ## 📁 File Locations
 
-| What | Where |
-|------|-------|
-| Production configs | `kubernetes/mongodb/prod/` |
-| Test configs | `kubernetes/mongodb/test/` |
-| Migrations | `kubernetes/mongodb/migrations/` |
-| Deploy script | `scripts/deploy-mongodb.ps1` |
-| Refresh script | `scripts/refresh-test-db.ps1` |
-| Documentation | `kubernetes/mongodb/README.md` |
-| Detailed guide | `kubernetes/mongodb/DEPLOYMENT.md` |
+| What               | Where                              |
+| ------------------ | ---------------------------------- |
+| Production configs | `kubernetes/mongodb/prod/`         |
+| Test configs       | `kubernetes/mongodb/test/`         |
+| Migrations         | `kubernetes/mongodb/migrations/`   |
+| Deploy script      | `scripts/deploy-mongodb.ps1`       |
+| Refresh script     | `scripts/refresh-test-db.ps1`      |
+| Documentation      | `kubernetes/mongodb/README.md`     |
+| Detailed guide     | `kubernetes/mongodb/DEPLOYMENT.md` |
 
 ---
 
@@ -89,17 +95,20 @@ Test:
 ## 🔍 Common Issues
 
 ### Pods Not Starting
+
 ```powershell
 kubectl describe pod <pod-name> -n mongodb-prod
 kubectl get events -n mongodb-prod
 ```
 
 ### Connection Failed
+
 ```powershell
 kubectl exec -it mongos-0 -n mongodb-prod -- mongosh --eval "db.adminCommand('ping')"
 ```
 
 ### Check Logs
+
 ```powershell
 kubectl logs <pod-name> -n mongodb-prod
 kubectl logs job/mongodb-init -n mongodb-prod
@@ -132,23 +141,26 @@ kubectl logs job/mongodb-init -n mongodb-prod
 ✅ Schema migrations with tracking  
 ✅ Test DB refresh with anonymization  
 ✅ One-command deployment  
-✅ Production-ready configuration  
+✅ Production-ready configuration
 
 ---
 
 ## 🔗 Connection Strings
 
 **Production (within cluster):**
+
 ```
 mongodb://mongos-svc.mongodb-prod.svc.cluster.local:27017/admin
 ```
 
 **Test (within cluster):**
+
 ```
 mongodb://mongos-svc.mongodb-test.svc.cluster.local:27017/admin
 ```
 
 **Port Forward (local):**
+
 ```powershell
 kubectl port-forward svc/mongos-svc -n mongodb-prod 27017:27017
 mongosh mongodb://localhost:27017/admin
@@ -168,18 +180,18 @@ mongosh mongodb://localhost:27017/admin
 
 ## 📊 What Gets Created
 
-| Resource Type | Production | Test |
-|---------------|------------|------|
-| Namespaces | 1 | 1 |
-| StatefulSets | 3 | 3 |
-| Deployments | 1 | 1 |
-| Services | 4 | 4 |
-| ConfigMaps | 1 | 1 |
-| Secrets | 1 | 1 |
-| Jobs | 1 | 1 |
-| PVCs | 7 | 7 |
-| **Total Pods** | **9** | **8** |
+| Resource Type  | Production | Test  |
+| -------------- | ---------- | ----- |
+| Namespaces     | 1          | 1     |
+| StatefulSets   | 3          | 3     |
+| Deployments    | 1          | 1     |
+| Services       | 4          | 4     |
+| ConfigMaps     | 1          | 1     |
+| Secrets        | 1          | 1     |
+| Jobs           | 1          | 1     |
+| PVCs           | 7          | 7     |
+| **Total Pods** | **9**      | **8** |
 
 ---
 
-*For detailed information, see MONGODB_IMPLEMENTATION.md*
+_For detailed information, see MONGODB_IMPLEMENTATION.md_
