@@ -1,7 +1,37 @@
+# DEV Environment - Tracks Dev branch
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: minikubetest-app
+  name: minikubetest-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Yessboom/Minikubetest
+    targetRevision: Dev
+    path: kubernetes
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30s
+---
+# TEST Environment - Tracks Test branch
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minikubetest-test
   namespace: argocd
 spec:
   project: default
@@ -11,7 +41,36 @@ spec:
     path: kubernetes
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: test
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30s
+---
+# PROD Environment - Tracks main branch
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minikubetest-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Yessboom/Minikubetest
+    targetRevision: main
+    path: kubernetes
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
   syncPolicy:
     automated:
       prune: true

@@ -81,13 +81,120 @@ kubectl apply -f argocd/application.yaml
 
 ## How it works:
 
-ArgoCD syncs with Git repo every 3 minutes
-If there is a change in the image SHA (in kubernetes/deployment) it pulls the new one and update.
+**Multi-Environment Setup:**
 
-# - Rolling update strategy ensures zero downtime (maxUnavailable: 0)
+- **Dev Environment** (namespace: dev) - Syncs from `Dev` branch
+- **Test Environment** (namespace: test) - Syncs from `Test` branch
+- **Prod Environment** (namespace: prod) - Syncs from `main` branch
 
-# - Changes are committed back to Git (full audit trail)
+**Deployment Workflow:**
 
-## Check ArgoCD Image Updater logs
+1. Build and push image to DockerHub with git commit SHA as tag
+2. Update the image tag in `kubernetes/deployment.yaml` with the new SHA
+3. Commit and push to the target branch (Dev/Test/main)
+4. ArgoCD detects the Git change (polls every 3 minutes)
+5. ArgoCD automatically syncs and deploys with zero downtime
 
-kubectl logs -n argocd -l app.kubernetes.io/name=argocd-image-updater -f
+**Example:**
+
+- Update Test environment: Push to `Test` branch with new image SHA
+- Update Prod environment: Push to `main` branch with new image SHA
+- Update Dev environment: Push to `Dev` branch with new image SHA
+
+- Rolling update strategy ensures zero downtime (maxUnavailable: 0)
+- Full Git history for audit trail
+
+## Build and Deploy Workflow
+
+### For Test Environment:
+
+```powershell
+# Switch to Test branch
+git checkout Test
+
+# Build with git commit SHA as tag
+$commitSHA = git rev-parse HEAD
+docker build -t yessboom/my-custom-nginx:$commitSHA .
+docker push yessboom/my-custom-nginx:$commitSHA
+
+# Update deployment.yaml with new image tag
+# Edit kubernetes/deployment.yaml and change:
+# image: yessboom/my-custom-nginx:<NEW_SHA>
+
+# Commit and push
+git add kubernetes/deployment.yaml
+git commit -m "Update Test environment to $commitSHA"
+git push origin Test
+
+# ArgoCD will auto-sync within 3 minutes
+```
+
+### For Production Environment:
+
+```powershell
+# Switch to main branch
+git checkout main
+
+# Build with git commit SHA as tag
+$commitSHA = git rev-parse HEAD
+docker build -t yessboom/my-custom-nginx:$commitSHA .
+docker push yessboom/my-custom-nginx:$commitSHA
+
+# Update deployment.yaml with new image tag
+# Edit kubernetes/deployment.yaml and change:
+# image: yessboom/my-custom-nginx:<NEW_SHA>
+
+# Commit and push
+git add kubernetes/deployment.yaml
+git commit -m "Update Production to $commitSHA"
+git push origin main
+
+# ArgoCD will auto-sync within 3 minutes
+```
+
+### For Dev Environment:
+
+```powershell
+# Switch to Dev branch
+git checkout Dev
+
+# Build with git commit SHA as tag
+$commitSHA = git rev-parse HEAD
+docker build -t yessboom/my-custom-nginx:$commitSHA .
+docker push yessboom/my-custom-nginx:$commitSHA
+
+# Update deployment.yaml with new image tag
+# Edit kubernetes/deployment.yaml and change:
+# image: yessboom/my-custom-nginx:<NEW_SHA>
+
+# Commit and push
+git add kubernetes/deployment.yaml
+git commit -m "Update Dev environment to $commitSHA"
+git push origin Dev
+
+# ArgoCD will auto-sync within 3 minutes
+```
+
+## View Applications Status
+
+```powershell
+# Check all environments
+kubectl get applications -n argocd
+
+# View specific app details
+kubectl get application minikubetest-dev -n argocd
+kubectl get application minikubetest-test -n argocd
+kubectl get application minikubetest-prod -n argocd
+
+# Force sync manually if needed
+kubectl patch application minikubetest-dev -n argocd --type merge -p '{"operation":{"sync":{}}}'
+kubectl patch application minikubetest-test -n argocd --type merge -p '{"operation":{"sync":{}}}'
+kubectl patch application minikubetest-prod -n argocd --type merge -p '{"operation":{"sync":{}}}'
+```
+
+## Check ArgoCD Sync Status
+
+```powershell
+# Watch ArgoCD logs
+kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server -f
+```
