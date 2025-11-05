@@ -19,7 +19,7 @@ kubectl apply -f kubernetes/deployment.yaml
 kubectl rollout status deployment/nginx-deployment
 kubectl apply -f kubernetes/ingress.yaml
 
-# Check ur app
+# Check ur app !!
 
 Just go to http://localhost
 
