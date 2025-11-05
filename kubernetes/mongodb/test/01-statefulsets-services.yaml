@@ -1,0 +1,271 @@
+# MongoDB Test - StatefulSets and Services for Sharded Cluster
+# This creates a resource-optimized test environment:
+# - 3 Config Servers (replica set)
+# - 2 Shards, each with 2 replicas
+# - 1 Mongos router (reduced from prod's 2)
+
+---
+# Config Server StatefulSet (3 replicas for quorum)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo-config
+  namespace: mongodb-test
+spec:
+  serviceName: mongo-config-svc
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mongo-config
+      role: configsvr
+  template:
+    metadata:
+      labels:
+        app: mongo-config
+        role: configsvr
+    spec:
+      containers:
+      - name: mongo
+        image: mongo:7.0
+        command:
+        - mongod
+        - "--configsvr"
+        - "--replSet"
+        - "rs-config"
+        - "--bind_ip_all"
+        - "--port"
+        - "27017"
+        ports:
+        - containerPort: 27017
+          name: mongo
+        volumeMounts:
+        - name: mongo-data
+          mountPath: /data/db
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+
+---
+# Config Server Service (Headless)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-config-svc
+  namespace: mongodb-test
+spec:
+  clusterIP: None
+  selector:
+    app: mongo-config
+    role: configsvr
+  ports:
+  - port: 27017
+    targetPort: 27017
+
+---
+# Shard 1 StatefulSet (2 replicas)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo-shard1
+  namespace: mongodb-test
+spec:
+  serviceName: mongo-shard1-svc
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mongo-shard1
+      role: shardsvr
+  template:
+    metadata:
+      labels:
+        app: mongo-shard1
+        role: shardsvr
+        shard: "1"
+    spec:
+      containers:
+      - name: mongo
+        image: mongo:7.0
+        command:
+        - mongod
+        - "--shardsvr"
+        - "--replSet"
+        - "rs-shard1"
+        - "--bind_ip_all"
+        - "--port"
+        - "27017"
+        ports:
+        - containerPort: 27017
+          name: mongo
+        volumeMounts:
+        - name: mongo-data
+          mountPath: /data/db
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 2Gi
+
+---
+# Shard 1 Service (Headless)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-shard1-svc
+  namespace: mongodb-test
+spec:
+  clusterIP: None
+  selector:
+    app: mongo-shard1
+    role: shardsvr
+  ports:
+  - port: 27017
+    targetPort: 27017
+
+---
+# Shard 2 StatefulSet (2 replicas)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo-shard2
+  namespace: mongodb-test
+spec:
+  serviceName: mongo-shard2-svc
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mongo-shard2
+      role: shardsvr
+  template:
+    metadata:
+      labels:
+        app: mongo-shard2
+        role: shardsvr
+        shard: "2"
+    spec:
+      containers:
+      - name: mongo
+        image: mongo:7.0
+        command:
+        - mongod
+        - "--shardsvr"
+        - "--replSet"
+        - "rs-shard2"
+        - "--bind_ip_all"
+        - "--port"
+        - "27017"
+        ports:
+        - containerPort: 27017
+          name: mongo
+        volumeMounts:
+        - name: mongo-data
+          mountPath: /data/db
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 2Gi
+
+---
+# Shard 2 Service (Headless)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-shard2-svc
+  namespace: mongodb-test
+spec:
+  clusterIP: None
+  selector:
+    app: mongo-shard2
+    role: shardsvr
+  ports:
+  - port: 27017
+    targetPort: 27017
+
+---
+# Mongos Router Deployment (1 replica for test environment)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongos
+  namespace: mongodb-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongos
+      role: router
+  template:
+    metadata:
+      labels:
+        app: mongos
+        role: router
+    spec:
+      containers:
+      - name: mongos
+        image: mongo:7.0
+        command:
+        - mongos
+        - "--configdb"
+        - "rs-config/mongo-config-0.mongo-config-svc.mongodb-test.svc.cluster.local:27017,mongo-config-1.mongo-config-svc.mongodb-test.svc.cluster.local:27017,mongo-config-2.mongo-config-svc.mongodb-test.svc.cluster.local:27017"
+        - "--bind_ip_all"
+        - "--port"
+        - "27017"
+        ports:
+        - containerPort: 27017
+          name: mongo
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+
+---
+# Mongos Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongos-svc
+  namespace: mongodb-test
+spec:
+  type: ClusterIP
+  selector:
+    app: mongos
+    role: router
+  ports:
+  - port: 27017
+    targetPort: 27017
+    name: mongo

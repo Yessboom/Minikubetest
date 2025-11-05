@@ -116,4 +116,22 @@ Password: (from command above)
 - Rolling update strategy ensures zero downtime (maxUnavailable: 0)
 - Full Git history for audit trail
 
-## Build and Deploy Workflow
+# Database
+
+## For Test
+
+kubectl port-forward -n mongodb-test svc/mongos-svc 27017:27017
+
+## For Prod (use different port)
+
+kubectl port-forward -n mongodb-prod svc/mongos-svc 27018:27017
+
+## Export from prod and anonymize
+
+### Copy the anonymize-and-import.js script to test pod
+
+kubectl cp scripts/anonymize-and-import.js mongodb-test/[pod-name]:/tmp/import.js
+
+### Execute it
+
+kubectl exec -i [pod-name] -n mongodb-test -- mongosh /tmp/import.js

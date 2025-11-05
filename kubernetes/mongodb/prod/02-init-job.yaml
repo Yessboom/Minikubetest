@@ -1,0 +1,89 @@
+# MongoDB Production - Initialization Job
+# This job runs after StatefulSets are up and:
+# 1. Initializes replica sets for config servers and shards
+# 2. Adds shards to the cluster via mongos
+# 3. Enables sharding for databases
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-init
+  namespace: mongodb-prod
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    metadata:
+      name: mongodb-init
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: init
+        image: mongo:7.0
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          echo "Waiting for MongoDB pods to be ready..."
+          sleep 30
+
+          echo "=== Step 1: Initialize Config Server Replica Set ==="
+          mongosh --host mongo-config-0.mongo-config-svc.mongodb-prod.svc.cluster.local:27017 <<EOF
+          rs.initiate({
+            _id: "rs-config",
+            configsvr: true,
+            members: [
+              { _id: 0, host: "mongo-config-0.mongo-config-svc.mongodb-prod.svc.cluster.local:27017" },
+              { _id: 1, host: "mongo-config-1.mongo-config-svc.mongodb-prod.svc.cluster.local:27017" },
+              { _id: 2, host: "mongo-config-2.mongo-config-svc.mongodb-prod.svc.cluster.local:27017" }
+            ]
+          })
+          EOF
+
+          echo "Waiting for config server replica set to elect primary..."
+          sleep 20
+
+          echo "=== Step 2: Initialize Shard 1 Replica Set ==="
+          mongosh --host mongo-shard1-0.mongo-shard1-svc.mongodb-prod.svc.cluster.local:27017 <<EOF
+          rs.initiate({
+            _id: "rs-shard1",
+            members: [
+              { _id: 0, host: "mongo-shard1-0.mongo-shard1-svc.mongodb-prod.svc.cluster.local:27017" },
+              { _id: 1, host: "mongo-shard1-1.mongo-shard1-svc.mongodb-prod.svc.cluster.local:27017" }
+            ]
+          })
+          EOF
+
+          echo "Waiting for shard1 replica set to elect primary..."
+          sleep 20
+
+          echo "=== Step 3: Initialize Shard 2 Replica Set ==="
+          mongosh --host mongo-shard2-0.mongo-shard2-svc.mongodb-prod.svc.cluster.local:27017 <<EOF
+          rs.initiate({
+            _id: "rs-shard2",
+            members: [
+              { _id: 0, host: "mongo-shard2-0.mongo-shard2-svc.mongodb-prod.svc.cluster.local:27017" },
+              { _id: 1, host: "mongo-shard2-1.mongo-shard2-svc.mongodb-prod.svc.cluster.local:27017" }
+            ]
+          })
+          EOF
+
+          echo "Waiting for shard2 replica set to elect primary..."
+          sleep 20
+
+          echo "=== Step 4: Add Shards to Cluster via Mongos ==="
+          mongosh --host mongos-svc.mongodb-prod.svc.cluster.local:27017 <<EOF
+          sh.addShard("rs-shard1/mongo-shard1-0.mongo-shard1-svc.mongodb-prod.svc.cluster.local:27017,mongo-shard1-1.mongo-shard1-svc.mongodb-prod.svc.cluster.local:27017")
+          sh.addShard("rs-shard2/mongo-shard2-0.mongo-shard2-svc.mongodb-prod.svc.cluster.local:27017,mongo-shard2-1.mongo-shard2-svc.mongodb-prod.svc.cluster.local:27017")
+          EOF
+
+          echo "=== Step 5: Verify Cluster Status ==="
+          mongosh --host mongos-svc.mongodb-prod.svc.cluster.local:27017 --eval "sh.status()"
+
+          echo "=== MongoDB Sharded Cluster Initialization Complete ==="
+          echo "Shards: 2"
+          echo "Replicas per shard: 2"
+          echo "Total data nodes: 4"
+          echo "Config servers: 3"
+          echo "Mongos routers: 2"
